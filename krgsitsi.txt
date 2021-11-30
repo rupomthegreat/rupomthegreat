@@ -1,0 +1,228 @@
+let removeUrls = `askinglot.com
+/forum
+stackexchange.com
+ubbthreads
+bobvila.com/posts
+/question
+hometalk.com/diy
+woodtalkonline.com
+bestbuy.com
+wayfair.com
+alibaba.com
+justanswer.com
+forums.
+ask.
+pinterest.com
+homeownershub
+/jforum
+/threads
+plumbersforums
+fixya.com
+diynot.com
+thebuildingcodeforum
+/ask
+findanyanswer.com
+houzz.com
+quora.com
+stackexchange.com
+amazon.com
+everythingwhat.com
+reddit.com
+lowes.com
+homedepot.com
+walmart.com
+menards.com`.split("\n");
+
+let searchName = document.querySelector('input[name="q"]').value;
+let keyWordsData = {};
+
+if (keyWordsData[searchName] == undefined)
+    keyWordsData[searchName] = {
+        r: [],
+        sv: "N"
+    };
+
+
+let data = {
+    people_also_ask: {
+        s: '.Wt5Tfe',
+        body: document.querySelector('.Wt5Tfe')
+    },
+    search_results: {
+        s: '.tF2Cxc',
+        results: []
+    }
+}
+let itsParent;
+
+//REMOVE PEOPLE ALSO ASK SECTION 
+if (data.people_also_ask.body) {
+    itsParent = data.people_also_ask.body.parentElement;
+    itsParent.removeChild(data.people_also_ask.body);
+}
+
+
+//GET THE RESULTS
+
+function getTheResults() {
+    if (document.querySelectorAll('.xt-google-domain-link-metrics').length === 0) {
+        setTimeout(getTheResults, 1000);
+    } else {
+        let tableBody = document.createElement("div");
+        let table = `<style>
+#minhaztable {
+margin-left:${window.getComputedStyle(document.querySelector('.MUFPAc')).marginLeft}
+}
+
+#minhaztable tr {
+            font-size: 1.2rem;
+        }
+        #minhaztable tr a {
+            font-size: 1rem;
+        }
+        
+        #minhaztable tr:nth-child(odd) {
+            background: #d6d6d6;
+        }
+        
+        #minhaztable tr:hover * {
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+        }</style><table id='minhaztable'>`;
+
+        //keyWordsData[searchName].sv = parseInt(document.querySelector(".surfer-main-keyword-widget").innerText);
+        document.querySelectorAll(".tF2Cxc").forEach((result) => {
+            let metrics = result.querySelector('.xt-google-domain-link-metrics');
+            if (metrics) {
+                let result_data = {
+                    t: result.querySelector('h3.LC20lb.MBeuO.DKV0Md').innerText,
+                    l: result.querySelector('.yuRUbf').firstChild.href,
+                    da: Number(result.querySelector('.xt-google-domain-link-metrics').innerText.split('/')[0].split(':')[1])
+                }
+
+                if (!filterUrls(result_data.l)) {
+                    data.search_results.results.push(result_data);
+                    table += `<tr><td>${result_data.da}</td><td>${result_data.t}<br><a href="${result_data.l}#minR=${result_data.da}" target="_blank">${result_data.l}</a></td></tr>`
+                }
+            }
+
+
+        })
+
+        table += "</table>";
+
+        tableBody.innerHTML = table;
+
+        document.querySelector('#appbar').appendChild(tableBody);
+
+        tableBody.querySelectorAll("tr").forEach((e, index) => {
+
+            //UPDATE DOMAIN RATING
+            let a = e.lastElementChild.lastElementChild;
+
+            fetch('https://domain.rsolution.dev/api/domain-data/get-url?url='+a.href)
+                .then(response => response.json())
+                .then(data => {
+                    e.firstElementChild.innerHTML = data.data.dr;
+                    console.log(data);
+                });
+
+
+
+
+
+            e.addEventListener("click", function () {
+                e.classList.toggle("nai");
+            })
+        })
+
+        keyWordsData[searchName].r = data.search_results.results;
+
+
+        //APPEND CHILD
+
+        if (data.people_also_ask.body) {
+            itsParent.appendChild(data.people_also_ask.body);
+        }
+
+    }
+
+}
+
+getTheResults();
+
+function filterUrls(url) {
+    for (var i = 0; i < removeUrls.length; i++)
+        if (url.includes(removeUrls[i])) return true;
+    return false;
+}
+
+
+
+//OTHER SCRIPTS
+s = document.createElement('style');
+s.innerHTML = `span.xt-google-domain-link-metrics > * {
+    background: red;
+    color: #fff !important;
+} .sc-fzoxnE.GqMIW {
+    border: 2px solid red;
+} .nai {
+    opacity: 0.2;
+}.related-question-pair:hover {
+    background: #b2ffbd;
+}`;
+document.head.appendChild(s);
+console.log(s);
+
+
+
+
+//open all
+let p = document.createElement('div');
+let allLinks = document.querySelectorAll('#minhaztable a');
+document.body.appendChild(p);
+
+p.innerHTML = "Open All";
+
+p.style = `    position: fixed;
+    top: 0;
+    right: 0;
+    background: red;
+    font-size: 2rem;z-index:99999999`
+
+p.onclick = function () {
+    allLinks.forEach((e) => {
+        e.setAttribute('target', '_blank');
+        e.click()
+    });
+}
+
+window.addEventListener("click", function () {
+    let questions = document.querySelectorAll('.related-question-pair');
+
+    questions.forEach((question) => {
+        if (!question.hasAttribute("addedClickable")) {
+            let keyword = question.innerText.substr(0, question.innerText.length - 1);
+            question.style.color = "#0020ff";
+
+            question.style.position = "relative";
+            let a = document.createElement("a");
+            a.href = `https://www.google.com/search?q=${keyword}`;
+            a.setAttribute("target", '_blank');
+            a.innerHTML = "OPEN";
+            a.style = `position: absolute; top: 13px; right: 43px`;
+
+            a.addEventListener("click", () => {
+                question.style.background = "#f7ff05";
+            })
+
+            question.appendChild(a);
+
+            if (question.innerHTML.includes("youtube.com")) {
+                question.style.background = "red";
+            }
+            question.setAttribute("addedClickable", "done man");
+        }
+    })
+})
